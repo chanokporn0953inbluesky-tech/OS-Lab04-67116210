@@ -1,7 +1,7 @@
 ======================================================
 COE67-222 Operating Systems - Lab 04 Report
-Name: [Your Name]
-Student ID: [Your Student ID]
+Name: [Ms.Chanokporn Charoensilp]
+Student ID: [67116210]
 ======================================================
 
 1. The Deadlock (Phase 2):
