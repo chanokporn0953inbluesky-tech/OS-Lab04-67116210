@@ -1,0 +1,49 @@
+======================================================
+COE67-222 Operating Systems - Lab 04 Report
+Name: [Your Name]
+Student ID: [Your Student ID]
+======================================================
+
+1. The Deadlock (Phase 2):
+In the `deadlock_simulation.py` script, explain step-by-step how the "Circular Wait" condition occurred between Model A and Model B.
+
+Answer:
+1. Model A successfully requests and acquires `gpu_0_lock`, then enters a simulated execution state via `time.sleep(0.1)`.
+2. Concurrently, Model B successfully requests and acquires `gpu_1_lock`, then also sleeps.
+3. After waking up, Model A attempts to acquire `gpu_1_lock`, but is blocked because Model B currently holds it (Model A is waiting for Model B).
+4. Meanwhile, Model B attempts to acquire `gpu_0_lock`, but is blocked because Model A currently holds it (Model B is waiting for Model A).
+5. This creates a Circular Wait dependency cycle: Model A is holding GPU 0 and waiting for GPU 1, while Model B is holding GPU 1 and waiting for GPU 0. Neither thread can proceed, leading to a complete system freeze (Deadlock).
+
+
+2. The Solution (Phase 3):
+By changing the code in `deadlock_avoidance.py` so that Model B also requests GPU 0 first, how did this specifically break the "Circular Wait" condition? 
+
+Answer:
+By enforcing a strict Resource Hierarchy (Lock Ordering), both Model A and Model B must request the locks in the exact same sequence: GPU 0 first, followed by GPU 1. 
+- If Model A acquires GPU 0 first, Model B is immediately blocked at the entry point when requesting GPU 0, preventing Model B from ever acquiring GPU 1 prematurely.
+- As a result, Model A is free to acquire GPU 1, complete its execution, and release both locks. Only then can Model B acquire GPU 0 and subsequently GPU 1.
+- This breaks the "Circular Wait" condition because a cycle of mutual resource dependency can never form when locks are acquired in a strictly monotonic order.
+
+
+3. Starvation vs Deadlock (Phase 4): 
+Based on the results from `starvation_sim.py`: 
+- How is the final output of the Starvation script fundamentally different from the Deadlock script you ran in Phase 2? 
+- In your own words, explain how a process scheduler could use a technique called "Aging" to help the `Polite_Model` get a fair share of CPU time. 
+
+Answer:
+- Fundamental Difference:
+  * In the Deadlock scenario (Phase 2), the entire system freezes completely; zero forward progress is made by any process, and manual intervention (Ctrl + C) is required to terminate it.
+  * In the Starvation scenario (Phase 4), the system remains fully operational and continues executing instructions at full speed. However, progress is heavily imbalanced: the greedy threads monopolize the lock (acquiring it tens of thousands of times), leaving the polite thread indefinitely deprived of resources (barely gaining a few hundred acquisitions).
+- How Aging Works:
+  * The process scheduler continuously monitors the waiting time of all ready processes in the queue.
+  * As the `Polite_Model` remains blocked and waiting over time, the scheduler incrementally increases its dynamic priority level.
+  * Eventually, the polite thread's priority becomes higher than that of the greedy threads, compelling the scheduler to grant it preferential access to the CPU and lock, thereby ensuring fairness and eliminating starvation.
+
+
+4. Deadlock Detection & Recovery (Phase 3.3 / Phase 5):
+- How did the `timeout` parameter simulate the Deadlock Detection mechanism of an Operating System?
+- When the Deadlock was detected, what exact step did Model A take to perform "Recovery" and allow the rest of the system to continue?
+
+Answer:
+- The `timeout` parameter in `gpu_1_lock.acquire(timeout=TIMEOUT)` functions like an OS Watchdog Timer. Instead of blocking indefinitely, the OS sets an upper waiting threshold (2.0 seconds). If a thread fails to obtain a requested resource within this window, the OS deduces that a stall or circular wait (Deadlock) has occurred, thereby flagging the event for automated intervention.
+- To perform Recovery, Model A aborts its acquisition attempt and immediately executes `gpu_0_lock.release()`. This acts as resource preemption/rollback, surrendering GPU 0 back to the pool so that the blocked Model B can successfully claim it, finish training, and avert a total system freeze.
